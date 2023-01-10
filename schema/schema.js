@@ -1,8 +1,11 @@
 const { projects, clients } = require('./data');
-const { GraphQLObjectType, GraphQLID, GraphQLString, GraphQLSchema, GraphQLList } = require('graphql');   
+const User = require('../models/User');
+const Course = require('../models/Course');
 
-const ClientType = new GraphQLObjectType({
-    name: "Client",
+const { GraphQLObjectType, GraphQLID, GraphQLString, GraphQLSchema, GraphQLList, GraphQLNonNull } = require('graphql');   
+
+const UserType = new GraphQLObjectType({
+    name: "User",
     fields: () => ({
         id: { type: GraphQLID },
         name:{type:GraphQLString},
@@ -10,56 +13,79 @@ const ClientType = new GraphQLObjectType({
         phone:{type:GraphQLString}
     })
 })
-const ProjectType = new GraphQLObjectType({
-    name: "Project",
+
+const CourseType = new GraphQLObjectType({
+    name: "Course",
     fields: () => ({
         id: { type: GraphQLID },
         name:{type:GraphQLString},
-        clientId:{type:GraphQLString},
         description:{type:GraphQLString},
         status: { type: GraphQLString },
-        client: {
-            type: ClientType,
-            // args: { id: { type: GraphQLID } },
-            resolve(parent, args){
-                return clients.find(client => client.id === parent.id);
+        user: {
+            type: UserType,
+            resolve(parent, args) {
+                return User.findById(parent.userId)
             }
         }
+       
     })
 })
 
 const RootQuery = new GraphQLObjectType({
     name: "RootQuery",
     fields: {
-        projects: {
-            type: GraphQLList(ProjectType),
+        courses: {
+            type: GraphQLList(CourseType),
             resolve() {
-                return projects;
+                return Course.find();
             }
         },
-        project: {
-            type: ProjectType,
+        course: {
+            type: CourseType,
             args: { id: { type: GraphQLID } },
             resolve(parent, args){
-                return projects.find(project => project.id === args.id);
+                return Course.findById(args.id)
             }
         },
-        clients: {
-            type: GraphQLList(ClientType),
+        users: {
+            type: GraphQLList(UserType),
             resolve() {
-                return clients;
+                return User.find();
             }
         },
-        client: {
-            type: ClientType,
+        user: {
+            type: UserType,
             args: { id: { type: GraphQLID } },
             resolve(parent, args){
-                return clients.find(client => client.id === args.id);
+                return User.findById(args.id);
+            }
+        }
+    }
+})
+
+const mutation = new GraphQLObjectType({
+    name: "Mutations",
+    fields: {
+        addUser: {
+            type: UserType,
+            args: {
+                name: { type: GraphQLNonNull(GraphQLString) },
+                email: { type: GraphQLNonNull(GraphQLString) },
+                phone: { type: GraphQLNonNull(GraphQLString) },
+            },
+            resolve(parent, args) {
+                const user = new User({
+                    name: args.name,
+                    email: args.email,
+                    phone:args.phone
+                })
+                return user.save()
             }
         }
     }
 })
 
 module.exports = new GraphQLSchema({
-    query:RootQuery
+    query: RootQuery,
+    mutation
 })
