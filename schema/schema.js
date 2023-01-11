@@ -2,7 +2,7 @@ const { projects, clients } = require('./data');
 const User = require('../models/User');
 const Course = require('../models/Course');
 
-const { GraphQLObjectType, GraphQLID, GraphQLString, GraphQLSchema, GraphQLList, GraphQLNonNull } = require('graphql');   
+const { GraphQLObjectType, GraphQLID, GraphQLString, GraphQLSchema, GraphQLList, GraphQLNonNull, GraphQLEnumType } = require('graphql');   
 
 const UserType = new GraphQLObjectType({
     name: "User",
@@ -66,6 +66,7 @@ const RootQuery = new GraphQLObjectType({
 const mutation = new GraphQLObjectType({
     name: "Mutations",
     fields: {
+        // add user
         addUser: {
             type: UserType,
             args: {
@@ -81,7 +82,55 @@ const mutation = new GraphQLObjectType({
                 })
                 return user.save()
             }
+        },
+        // delete user
+        deleteUser: {
+            type: UserType,
+            args: {
+                id: { type: GraphQLNonNull(GraphQLString) }
+            },
+            resolve(parent, args) {
+                return User.findByIdAndDelete(args.id)
+            }
+        },
+        // add course
+        addCourse: {
+            type: CourseType,
+            args: {
+                name: { type: GraphQLNonNull(GraphQLString) },
+                description: { type: GraphQLNonNull(GraphQLString) },
+                status: {
+                    type: new GraphQLEnumType({
+                        name: "CourseStatus",
+                        values: {
+                            "Good":{value:"Good"},
+                            "Better":{value:"Better"},
+                            "Best":{value:"Best"}
+                        }
+                    }),
+                    defaultValue: "Good",
+                },
+                userId:{type:GraphQLNonNull(GraphQLID)}
+            },
+            resolve(parent, args) {
+                const course = new Course({
+                    name: args.name,
+                    description: args.description,
+                    status: args.status,
+                    userId:args.userId
+                })
+                return course.save()
+            }
+        },
+        // delete course
+        deleteCourse: {
+            type: CourseType,
+            args: { id: { type: GraphQLNonNull(GraphQLString) } },
+            resolve(parent, args) {
+                return Course.findByIdAndDelete(args.id);
+            }
         }
+        
     }
 })
 
